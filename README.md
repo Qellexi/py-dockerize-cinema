@@ -1,32 +1,24 @@
-# API Serializers
+# Tickets and Orders API
 
-- Read [the guideline](https://github.com/mate-academy/py-task-guideline/blob/main/README.md) before starting.
+Read [the guideline](https://github.com/mate-academy/py-task-guideline/blob/main/README.md) before starting.
 - Use the following command to load prepared data from fixture to test and debug your code:
 
   `python manage.py loaddata cinema_service_db_data.json`
+ 
+- After loading data from fixture you can use following superuser (or create another one by yourself):
+  - Login: `admin.user`
+  - Password: `1qazcde3`
 
-In this task you will implement serializers and views for the following models:
+`In this task you will add the functionality of working with orders.
 
-1. `Genre`
-2. `Actor`
-3. `CinemaHall`
-4. `Movie`
-5. `MovieSession`
+1. Create serializers and views to support the following endpoints:
 
-For every `<entity>` from `actors`, `genres`, `cinema_halls`, `movies`, `movie_sessions` such
-endpoints should be implemented:
-* `GET api/cinema/<entity>/` - should return a list of the all entity items
-* `POST api/cinema/<entity>/` - should create a new entity based on passed data
-* `GET api/cinema/<entity>/<pk>/` - should return an entity with given id
-* `PUT api/cinema/<entity>/<pk>/` - should update the entity with given id based on passed data
-* `DELETE api/cinema/<entity>/<pk>/` - should delete the entity with given id
+* `GET api/cinema/orders/` - should return a list of the all orders that filtered by the authenticated user.
+Add detail information about movie session and implement pagination. Note, to implement pagination don't forget to place config in the `settings.py`.
 
-Additional requirements:
-1. For the list movie endpoint, genres and actors should be returned as lists of strings.
-`"genres"` list should contain names of the genres, and the `"actors"` list should contain full names of actors and actresses.
 Example:
 ```
-GET api/cinema/movies/ 
+GET /api/cinema/orders/?page=2
 ```
 
 ```
@@ -35,75 +27,61 @@ Allow: GET, POST, HEAD, OPTIONS
 Content-Type: application/json
 Vary: Accept
 
-[
-    {
-        "id": 1,
-        "title": "Harry Potter and the Philosopher's Stone",
-        "description": "The first movie about Harry Potter",
-        "duration": 210,
-        "genres": [
-            "drama"
-        ],
-        "actors": [
-            "Emma Watson",
-            "Daniel Radcliffe"
-        ]
-    }
-]
-```
-2. At the same time movie detail endpoint should provide complete information about the genres and actors.
-
-Example:
-```
-GET /api/cinema/movies/1/
-```
-
-```
-HTTP 200 OK
-Allow: GET, PUT, PATCH, DELETE, HEAD, OPTIONS
-Content-Type: application/json
-Vary: Accept
-
 {
-    "id": 1,
-    "title": "Harry Potter and the Philosopher's Stone",
-    "description": "The first movie about Harry Potter",
-    "duration": 210,
-    "genres": [
-        {
-            "id": 1,
-            "name": "drama"
-        }
-    ],
-    "actors": [
-        {
-            "id": 1,
-            "first_name": "Emma",
-            "last_name": "Watson",
-            "full_name": "Emma Watson"
-        },
+    "count": 3,
+    "next": "http://127.0.0.1:8000/api/cinema/orders/?page=3",
+    "previous": "http://127.0.0.1:8000/api/cinema/orders/",
+    "results": [
         {
             "id": 2,
-            "first_name": "Daniel",
-            "last_name": "Radcliffe",
-            "full_name": "Daniel Radcliffe"
+            "tickets": [
+                {
+                    "id": 2,
+                    "row": 2,
+                    "seat": 3,
+                    "movie_session": {
+                        "id": 1,
+                        "show_time": "2022-12-12T12:32:00Z",
+                        "movie_title": "Movie",
+                        "cinema_hall_name": "Green",
+                        "cinema_hall_capacity": 2829
+                    }
+                }
+            ],
+            "created_at": "2022-05-16T13:45:30.911367Z"
         }
     ]
 }
 ```
 
-3. For `movies_session` list endpoint you should return the following information:
-    * `"id"` - the id of the movie session;
-    * `"show_time"` - the start time of the session
-    * `"movie_title"` - the title of the movie
-    * `"cinema_hall_name"` - the name of the cinema hall for the session
-    * `"cinema_hall_capacity"` - the capacity of the cinema hall for the session
+* `POST api/cinema/orders/` - should create a new order for the authenticated user. 
+It should support the following request structure:
+```json
+{
+    "tickets": [
+        {
+            "row": 2,
+            "seat": 1,
+            "movie_session": 1
+        },
+        {
+            "row": 2,
+            "seat": 2,
+            "movie_session": 1
+        }
+    ]
+}
+```
 
+2. Provide filtering for movies by genres, actors and title. Use `?actors=`, `?genres=` and `?title=` parameters.
+Filtering by title with the `string` parameter should return all movies whose title contains `string`.
+
+3. Implement filtering for movie sessions by date and movie. The date should be provided in `year-month-day` format, 
+the movie by its id.
 Example:
 ```
-GET /api/cinema/movie_sessions/
+GET /api/cinema/movie_sessions/?date=2022-12-12&movie=1
 ```
-
 ```
 HTTP 200 OK
 Allow: GET, POST, HEAD, OPTIONS
@@ -112,29 +90,20 @@ Vary: Accept
 
 [
     {
-        "id": 2,
-        "show_time": "2023-07-22T12:15:00Z",
-        "movie_title": "Harry Potter and the Prisoner of Azkaban",
-        "cinema_hall_name": "Green",
-        "cinema_hall_capacity": 150
-    },
-    {
         "id": 1,
-        "show_time": "2022-06-15T12:25:00Z",
-        "movie_title": "Harry Potter and the Philosopher's Stone",
-        "cinema_hall_name": "Black",
-        "cinema_hall_capacity": 300
+        "show_time": "2022-12-12T12:32:00Z",
+        "movie_title": "Movie",
+        "cinema_hall_name": "Green",
+        "cinema_hall_capacity": 2829
     }
 ]
 ```
 
-4. At the same time for the movie session detail endpoint, complete information about the movie should be provided.
 
-Example:
+4. Return taken places for movie session details endpoint
 ```
 GET /api/cinema/movie_sessions/1/
 ```
-
 ```
 HTTP 200 OK
 Allow: GET, PUT, PATCH, DELETE, HEAD, OPTIONS
@@ -143,33 +112,48 @@ Vary: Accept
 
 {
     "id": 1,
-    "show_time": "2022-06-15T12:25:00Z",
+    "show_time": "2022-12-12T12:32:00Z",
     "movie": {
         "id": 1,
-        "title": "Harry Potter and the Philosopher's Stone",
-        "description": "The first movie about Harry Potter",
-        "duration": 210,
+        "title": "Movie",
+        "description": "description",
+        "duration": 123,
         "genres": [
             "drama"
         ],
         "actors": [
-            "Emma Watson",
-            "Daniel Radcliffe"
+            "F F"
         ]
     },
     "cinema_hall": {
-        "id": 2,
-        "name": "Black",
-        "rows": 20,
-        "seats_in_row": 15,
-        "capacity": 300
-    }
+        "id": 1,
+        "name": "Green",
+        "rows": 123,
+        "seats_in_row": 23,
+        "capacity": 2829
+    },
+    "taken_places": [
+        {
+            "row": 2,
+            "seat": 1
+        },
+        {
+            "row": 2,
+            "seat": 3
+        },
+        {
+            "row": 2,
+            "seat": 10
+        }
+    ]
 }
+
 ```
+5. Add `tickets_available` field to movie sessions list endpoint, 
+which says about how many `tickets` are still available for each `movie_session`
 
 
-Hint: Use `ModelViewSet` to create views.
-
-Run tests through the terminal using `pytest`
+Optional tasks:
+- Provide validation for creating tickets on serializer level
 
 ### Note: Check your code using this [checklist](checklist.md) before pushing your solution.
