@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from cinema.models import Movie, Actor, Genre, CinemaHall, MovieSession, Order
+from cinema.models import Movie, Actor, Genre, CinemaHall, MovieSession, Order, Ticket
 
 
 class ActorSerializer(serializers.ModelSerializer):
@@ -66,6 +66,7 @@ class MovieSessionSerializer(serializers.ModelSerializer):
         source="cinema_hall.capacity",
         read_only=True
     )
+    tickets_available = serializers.SerializerMethodField()
 
     class Meta:
         model = MovieSession
@@ -75,12 +76,28 @@ class MovieSessionSerializer(serializers.ModelSerializer):
             "movie_title",
             "cinema_hall_name",
             "cinema_hall_capacity",
+            "tickets_available",
         )
+
+    def get_tickets_available(self, obj):
+        total_seats = obj.cinema_hall.capacity
+        taken_seats = obj.tickets.count()
+        return total_seats - taken_seats
+
+
+class TakenPlaceSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Ticket
+        fields = ("row", "seat")
 
 class MovieSessionRetrieveSerializer(serializers.ModelSerializer):
     movie = MovieListSerializer(read_only=True)
     cinema_hall = CinemaHallSerializer(read_only=True)
-
+    taken_places = TakenPlaceSerializer(
+        many=True,
+        read_only=True,
+        source="tickets"
+    )
     class Meta:
         model = MovieSession
         fields = (
@@ -88,10 +105,23 @@ class MovieSessionRetrieveSerializer(serializers.ModelSerializer):
             "show_time",
             "movie",
             "cinema_hall",
+            "taken_places"
         )
 
+class TicketSerializer(serializers.ModelSerializer):
+    movie_session = MovieSessionSerializer(read_only=True)
+
+    class Meta:
+        model = Ticket
+        fields = ("id", "row", "seat", "movie_session")
 
 class OrderSerializer(serializers.ModelSerializer):
+    tickets = TicketSerializer(
+        many=True,
+        read_only=False,
+        allow_empty=False,
+    )
+
     class Meta:
         model = Order
-        fields = ("created_at", "user")
+        fields = ("id", "tickets", "created_at")

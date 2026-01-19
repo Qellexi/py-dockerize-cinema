@@ -1,9 +1,5 @@
-from django.shortcuts import get_object_or_404
 from rest_framework import status, viewsets
-from rest_framework.generics import GenericAPIView
-from rest_framework.response import Response
-from rest_framework.views import APIView
-from rest_framework.viewsets import GenericViewSet
+from rest_framework.pagination import PageNumberPagination
 
 from cinema.models import Movie, Genre, Actor, CinemaHall, MovieSession, Order
 from cinema.serializers import (
@@ -17,6 +13,11 @@ from cinema.serializers import (
 class MovieViewSet(viewsets.ModelViewSet):
     queryset = Movie.objects.all()
 
+    @staticmethod
+    def _params_to_ints(qs):
+        """Convert a string of format '1, 2, 3' to a list of integers [1, 2, 3]."""
+        return [int(str_id) for str_id in qs.split(',')]
+
     def get_serializer_class(self):
         if self.action == "list":
             return MovieListSerializer
@@ -26,6 +27,22 @@ class MovieViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         queryset = self.queryset
+        actors = self.request.query_params.get("actors")
+        genres = self.request.query_params.get("genres")
+        title = self.request.query_params.get("title")
+
+        if actors:
+            actors = self._params_to_ints(actors)
+            queryset = queryset.filter(actors__id__in=actors)
+        if genres:
+            genres = self._params_to_ints(genres)
+            queryset = queryset.filter(genre__id__in=genres)
+
+        if title:
+            queryset = queryset.filter(title__icontains=title)
+
+
+        queryset = queryset.distinct()
         if self.action in ("list", "retrieve"):
             return queryset.prefetch_related("genres", "actors")
 
@@ -47,6 +64,11 @@ class CinemaHallViewSet(viewsets.ModelViewSet):
 class MovieSessionViewSet(viewsets.ModelViewSet):
     queryset = MovieSession.objects.all()
 
+    @staticmethod
+    def _params_to_ints(qs):
+        """Convert a string of format '1, 2, 3' to a list of integers [1, 2, 3]."""
+        return [int(str_id) for str_id in qs.split(',')]
+
     def get_serializer_class(self):
         if self.action == "list":
             return MovieSessionSerializer
@@ -56,11 +78,32 @@ class MovieSessionViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         queryset = self.queryset
+        date = self.request.query_params.get("date")
+        movie = self.request.query_params.get("movie")
+
+        if date:
+            queryset = queryset.filter(show_time__date=date)
+
+        if movie:
+            movie = self._params_to_ints(movie)
+            queryset = queryset.filter(movie__id__in=movie)
+
         if self.action in ("retrieve",):
             return queryset.select_related("movie", "cinema_hall")
 
         return queryset
 
+
 class OrderViewSet(viewsets.ModelViewSet):
     queryset = Order.objects.all()
     serializer_class = OrderSerializer
+
+    def get_queryset(self):
+        queryset = self.queryset.filter(user=self.request.user)
+        if self.action == "list":
+            queryset = queryset.prefetch_related("tickets__movie_session__cinema_hall")
+
+        return queryset
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
