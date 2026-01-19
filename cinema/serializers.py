@@ -1,3 +1,4 @@
+from django.db import transaction
 from rest_framework import serializers
 from cinema.models import Movie, Actor, Genre, CinemaHall, MovieSession, Order, Ticket
 
@@ -125,3 +126,11 @@ class OrderSerializer(serializers.ModelSerializer):
     class Meta:
         model = Order
         fields = ("id", "tickets", "created_at")
+
+    def create(self, validated_data):
+        with transaction.atomic():
+            tickets_data = validated_data.pop("tickets")
+            order = Order.objects.create(**validated_data)
+            for ticket in tickets_data:
+                Ticket.objects.create(order=order, **ticket)
+            return order

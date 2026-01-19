@@ -28,7 +28,7 @@ class MovieViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         queryset = self.queryset
         actors = self.request.query_params.get("actors")
-        genres = self.request.query_params.get("genres")
+        genres = self.request.query_params.get("genre")
         title = self.request.query_params.get("title")
 
         if actors:
@@ -36,7 +36,7 @@ class MovieViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(actors__id__in=actors)
         if genres:
             genres = self._params_to_ints(genres)
-            queryset = queryset.filter(genre__id__in=genres)
+            queryset = queryset.filter(genres__id__in=genres)
 
         if title:
             queryset = queryset.filter(title__icontains=title)
@@ -93,10 +93,16 @@ class MovieSessionViewSet(viewsets.ModelViewSet):
 
         return queryset
 
+class OrderViewSetPagination(PageNumberPagination):
+    page_size = 10
+    page_size_query_param = "page_size"
+    max_page_size = 20
+
 
 class OrderViewSet(viewsets.ModelViewSet):
     queryset = Order.objects.all()
     serializer_class = OrderSerializer
+    pagination_class = OrderViewSetPagination
 
     def get_queryset(self):
         queryset = self.queryset.filter(user=self.request.user)
