@@ -1,7 +1,8 @@
-from rest_framework import status, viewsets
-from rest_framework.pagination import PageNumberPagination
+from rest_framework import viewsets
+from rest_framework.authentication import TokenAuthentication
 
 from cinema.models import Movie, Genre, Actor, CinemaHall, MovieSession, Order
+from cinema.permissions import IsAdminAllOrIfAuthenticatedReadOnly, IsAuthenticatedOrAdmin
 from cinema.serializers import (
     MovieSerializer,
     GenreSerializer,
@@ -12,6 +13,9 @@ from cinema.serializers import (
 
 class MovieViewSet(viewsets.ModelViewSet):
     queryset = Movie.objects.all()
+    authentication_classes = (TokenAuthentication,)
+    permission_classes = (IsAdminAllOrIfAuthenticatedReadOnly,)
+    http_method_names = ["get", "post"]
 
     @staticmethod
     def _params_to_ints(qs):
@@ -52,17 +56,31 @@ class MovieViewSet(viewsets.ModelViewSet):
 class GenreViewSet(viewsets.ModelViewSet):
     queryset = Genre.objects.all()
     serializer_class = GenreSerializer
+    authentication_classes = (TokenAuthentication,)
+    permission_classes = (IsAdminAllOrIfAuthenticatedReadOnly,)
+    http_method_names = ["get", "post"]
+
 
 class ActorViewSet(viewsets.ModelViewSet):
     queryset = Actor.objects.all()
     serializer_class = ActorSerializer
+    authentication_classes = (TokenAuthentication,)
+    permission_classes = (IsAdminAllOrIfAuthenticatedReadOnly,)
+    http_method_names = ["get", "post"]
+
 
 class CinemaHallViewSet(viewsets.ModelViewSet):
     queryset = CinemaHall.objects.all()
     serializer_class = CinemaHallSerializer
+    authentication_classes = (TokenAuthentication,)
+    permission_classes = (IsAdminAllOrIfAuthenticatedReadOnly,)
+    http_method_names = ["get", "post"]
+
 
 class MovieSessionViewSet(viewsets.ModelViewSet):
     queryset = MovieSession.objects.all()
+    authentication_classes = (TokenAuthentication,)
+    permission_classes = (IsAuthenticatedOrAdmin,)
 
     @staticmethod
     def _params_to_ints(qs):
@@ -97,6 +115,8 @@ class MovieSessionViewSet(viewsets.ModelViewSet):
 class OrderViewSet(viewsets.ModelViewSet):
     queryset = Order.objects.all()
     serializer_class = OrderSerializer
+    authentication_classes = (TokenAuthentication,)
+    permission_classes = (IsAdminAllOrIfAuthenticatedReadOnly,)
 
     def get_queryset(self):
         queryset = self.queryset.filter(user=self.request.user)
