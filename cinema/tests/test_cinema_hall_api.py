@@ -1,130 +1,105 @@
 from django.test import TestCase
+from django.urls import reverse
 
 from rest_framework.test import APIClient
 from rest_framework import status
 
 from cinema.models import CinemaHall
+from user.tests.test_user_api import create_user
+from cinema.serializers import CinemaHallSerializer
+
+CINEMA_HALL_URL = reverse("cinema:cinemahall-list")
 
 
-class CinemaHallApiTests(TestCase):
+def sample_cinema_hall(**params):
+    defaults = {
+        "name": "Blue",
+        "rows": 15,
+        "seats_in_row": 20,
+    }
+
+    defaults.update(params)
+
+    return CinemaHall.objects.create(**defaults)
+
+
+class PublicCinemaHallApiTests(TestCase):
     def setUp(self):
         self.client = APIClient()
-        CinemaHall.objects.create(
-            name="Blue",
-            rows=15,
-            seats_in_row=20,
-        )
-        CinemaHall.objects.create(
-            name="VIP",
-            rows=6,
-            seats_in_row=8,
-        )
 
-    def test_get_cinema_halls(self):
-        response = self.client.get("/api/cinema/cinema_halls/")
-        blue_hall = {
+    def test_auth_required(self):
+        res = self.client.get(CINEMA_HALL_URL)
+        self.assertEqual(res.status_code, status.HTTP_401_UNAUTHORIZED)
+
+
+class PrivateCinemaHallApiTests(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.user = create_user(
+            username="test_admin",
+            email="test@test.com",
+            password="testpass",
+        )
+        self.client = APIClient()
+        self.client.force_authenticate(user=self.user)
+
+    def test_get_cinema_hall(self):
+        sample_cinema_hall()
+
+        response = self.client.get(CINEMA_HALL_URL)
+
+        cinema_hall = CinemaHall.objects.all()
+        serializer = CinemaHallSerializer(cinema_hall, many=True)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data, serializer.data)
+
+    def test_post_cinema_hall(self):
+        payload = {
             "name": "Blue",
             "rows": 15,
             "seats_in_row": 20,
-            "capacity": 300,
         }
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data[0]["name"], blue_hall["name"])
-        self.assertEqual(response.data[0]["rows"], blue_hall["rows"])
-        self.assertEqual(
-            response.data[0]["seats_in_row"], blue_hall["seats_in_row"]
-        )
-        vip_hall = {
-            "name": "VIP",
-            "rows": 6,
-            "seats_in_row": 8,
-            "capacity": 48,
-        }
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data[1]["name"], vip_hall["name"])
-        self.assertEqual(response.data[1]["rows"], vip_hall["rows"])
-        self.assertEqual(
-            response.data[1]["seats_in_row"], vip_hall["seats_in_row"]
-        )
 
-    def test_post_cinema_halls(self):
-        response = self.client.post(
-            "/api/cinema/cinema_halls/",
-            {
-                "name": "Yellow",
-                "rows": 14,
-                "seats_in_row": 15,
-            },
+        response = self.client.post(CINEMA_HALL_URL, payload)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+
+class AdminCinemaHallApiTests(TestCase):
+    def setUp(self):
+        self.user = create_user(
+            username="test_admin",
+            email="test@test.com",
+            password="testpass",
+            is_staff=True,
         )
-        db_cinema_halls = CinemaHall.objects.all()
+        self.client = APIClient()
+        self.client.force_authenticate(user=self.user)
+
+    def test_post_cinema_hall(self):
+        payload = {
+            "name": "Blue",
+            "rows": 15,
+            "seats_in_row": 20,
+        }
+
+        response = self.client.post(CINEMA_HALL_URL, payload)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        self.assertEqual(db_cinema_halls.count(), 3)
-        self.assertEqual(db_cinema_halls.filter(name="Yellow").count(), 1)
 
-    def test_get_cinema_hall(self):
-        response = self.client.get("/api/cinema/cinema_halls/2/")
-        vip_hall = {
-            "name": "VIP",
-            "rows": 6,
-            "seats_in_row": 8,
-            "capacity": 48,
-        }
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data["name"], vip_hall["name"])
-        self.assertEqual(response.data["rows"], vip_hall["rows"])
-        self.assertEqual(
-            response.data["seats_in_row"], vip_hall["seats_in_row"]
-        )
-        self.assertEqual(response.data["capacity"], vip_hall["capacity"])
+    def test_retrieve_cinema_hall(self):
+        sample_cinema_hall()
 
-    def test_get_invalid_cinema_hall(self):
-        response = self.client.get("/api/cinema/cinema_halls/1001/")
+        response = self.client.get(f"{CINEMA_HALL_URL}1/")
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
     def test_put_cinema_hall(self):
-        response = self.client.put(
-            "/api/cinema/cinema_halls/1/",
-            {
-                "name": "Yellow",
-                "rows": 14,
-                "seats_in_row": 15,
-            },
-        )
-        cinema_hall_pk_1 = CinemaHall.objects.get(pk=1)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(
-            [
-                cinema_hall_pk_1.name,
-                cinema_hall_pk_1.rows,
-                cinema_hall_pk_1.seats_in_row,
-            ],
-            [
-                "Yellow",
-                14,
-                15,
-            ],
-        )
+        sample_cinema_hall()
 
-    def test_patch_cinema_hall(self):
-        response = self.client.patch(
-            "/api/cinema/cinema_halls/1/",
-            {
-                "name": "Green",
-            },
-        )
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(CinemaHall.objects.get(id=1).name, "Green")
+        response = self.client.put(f"{CINEMA_HALL_URL}1/", {})
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
     def test_delete_cinema_hall(self):
-        response = self.client.delete(
-            "/api/cinema/cinema_halls/1/",
-        )
-        db_cinema_halls_id_1 = CinemaHall.objects.filter(id=1)
-        self.assertEqual(db_cinema_halls_id_1.count(), 0)
-        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        sample_cinema_hall()
 
-    def test_delete_invalid_cinema_hall(self):
-        response = self.client.delete(
-            "/api/cinema/cinema_halls/1000/",
-        )
+        response = self.client.delete(f"{CINEMA_HALL_URL}1/")
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
