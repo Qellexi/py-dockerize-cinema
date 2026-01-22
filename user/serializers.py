@@ -10,9 +10,7 @@ class UserSerializer(serializers.ModelSerializer):
             'username',
             'email',
             'password',
-            'is_staff',
-            'first_name',
-            'last_name'
+            'is_staff'
         )
         read_only_fields = ("id", "is_staff")
         extra_kwargs = {
@@ -22,16 +20,16 @@ class UserSerializer(serializers.ModelSerializer):
                 "style": {"input_type": "password"}
             },
         }
-        def create(self, validated_data):
-            """create user with encrypted password"""
-            return get_user_model.objects.create_user(**validated_data)
+    def create(self, validated_data):
+        """create user with encrypted password"""
+        return get_user_model().objects.create_user(**validated_data)
 
-        def update(self, instance, validated_data):
-            """update user with encrypted password"""
-            password = validated_data.pop("password", None)
-            user = super().update(instance,validated_data)
-            if password:
-                user.set_password(password)
-                user.save()
+    def update(self, instance, validated_data):
+        """update user with encrypted password"""
+        password = validated_data.pop("password", None)
+        user = super().update(instance,validated_data)
+        if password:
+            user.set_password(password)
+            user.save()
 
-            return user
+        return user
