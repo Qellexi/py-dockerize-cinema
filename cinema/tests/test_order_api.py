@@ -43,7 +43,6 @@ class PublicOrderApiTests(TestCase):
 class PrivateOrderApiTests(TestCase):
     def setUp(self):
         self.user = create_user(
-            username="test_admin",
             email="test@test.com",
             password="testpass",
         )
@@ -92,7 +91,6 @@ class PrivateOrderApiTests(TestCase):
 class AdminOrderApiTests(TestCase):
     def setUp(self):
         self.user = create_user(
-            username="test_admin",
             email="test@test.com",
             password="testpass",
             is_staff=True,
@@ -102,7 +100,6 @@ class AdminOrderApiTests(TestCase):
 
     def test_get_order_when_admin_dont_have_order(self):
         user = get_user_model().objects.create_user(
-            username="user",
             email="user@test.com",
             password="paspassjnf",
         )

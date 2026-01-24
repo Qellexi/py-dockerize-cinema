@@ -30,7 +30,6 @@ class PublicGenresApiTests(TestCase):
 class PrivateGenreApiTests(TestCase):
     def setUp(self):
         self.user = create_user(
-            username="test_admin",
             email="test@test.com",
             password="testpass",
         )
@@ -58,7 +57,6 @@ class PrivateGenreApiTests(TestCase):
 class AdminGenreApiTests(TestCase):
     def setUp(self):
         self.user = create_user(
-            username="test_admin",
             email="test@test.com",
             password="testpass",
             is_staff=True,

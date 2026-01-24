@@ -36,7 +36,6 @@ class PrivateCinemaHallApiTests(TestCase):
     def setUp(self):
         self.client = APIClient()
         self.user = create_user(
-            username="test_admin",
             email="test@test.com",
             password="testpass",
         )
@@ -68,7 +67,6 @@ class PrivateCinemaHallApiTests(TestCase):
 class AdminCinemaHallApiTests(TestCase):
     def setUp(self):
         self.user = create_user(
-            username="test_admin",
             email="test@test.com",
             password="testpass",
             is_staff=True,
