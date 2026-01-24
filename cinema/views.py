@@ -1,6 +1,9 @@
-from rest_framework import viewsets
+from rest_framework import viewsets, status
 from rest_framework.authentication import TokenAuthentication
+from rest_framework.decorators import action
+from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
 
 from cinema.models import Movie, Genre, Actor, CinemaHall, MovieSession, Order
 from cinema.permissions import IsAdminOrIfAuthenticatedReadOnly, IsAuthenticatedOrAdmin
@@ -9,7 +12,7 @@ from cinema.serializers import (
     GenreSerializer,
     ActorSerializer,
     CinemaHallSerializer, MovieSessionSerializer, OrderSerializer, MovieListSerializer, MovieRetrieveSerializer,
-    MovieSessionRetrieveSerializer,
+    MovieSessionRetrieveSerializer, MovieImageSerializer,
 )
 
 class MovieViewSet(viewsets.ModelViewSet):
@@ -28,6 +31,8 @@ class MovieViewSet(viewsets.ModelViewSet):
             return MovieListSerializer
         elif self.action == "retrieve":
             return MovieRetrieveSerializer
+        elif self.action == "upload_image":
+            return MovieImageSerializer
         return MovieSerializer
 
     def get_queryset(self):
@@ -52,6 +57,22 @@ class MovieViewSet(viewsets.ModelViewSet):
             return queryset.prefetch_related("genres", "actors")
 
         return queryset
+
+    @action(
+        methods=["GET", "POST"],
+        detail=True,
+        permission_classes=(IsAdminOrIfAuthenticatedReadOnly,), #not necessary
+        url_path="upload-image",
+    )
+    def upload_image(self, request, pk=None):
+        movie = self.get_object()
+        serializer = self.get_serializer(movie, data=request.data)
+
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+
+        return Response(serializer.data, status=status.HTTP_400_BAD_REQUEST)
 
 
 class GenreViewSet(viewsets.ModelViewSet):
@@ -94,6 +115,8 @@ class MovieSessionViewSet(viewsets.ModelViewSet):
             return MovieSessionSerializer
         elif self.action == "retrieve":
             return MovieSessionRetrieveSerializer
+        elif self.action == "upload_image":
+            return MovieImageSerializer
         return MovieSessionSerializer
 
     def get_queryset(self):
@@ -112,6 +135,22 @@ class MovieSessionViewSet(viewsets.ModelViewSet):
             return queryset.select_related("movie", "cinema_hall")
 
         return queryset
+
+    @action(
+        methods=["POST"],
+        detail=True,
+        permission_classes=(IsAdminOrIfAuthenticatedReadOnly,),  # not necessary
+        url_path="upload-image",
+    )
+    def upload_image(self, request, pk=None):
+        movie_session = self.get_object()
+        serializer = self.get_serializer(movie_session, data=request.data)
+
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+
+        return Response(serializer.data, status=status.HTTP_400_BAD_REQUEST)
 
 
 class OrderViewSet(viewsets.ModelViewSet):

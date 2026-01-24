@@ -1,6 +1,9 @@
+import uuid
+from _pytest import pathlib
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models
+from django.utils.text import slugify
 
 
 class Genre(models.Model):
@@ -30,6 +33,10 @@ class CinemaHall(models.Model):
     def __str__(self):
         return f"CinemaHall: {self.name} (rows: {self.rows}, seats_in_row: {self.seats_in_row})"
 
+def movie_upload_path(instance: "Movie", filename: str) -> pathlib.Path:
+    filename = f"{slugify(instance.title)}-{uuid.uuid4()}" + pathlib.Path(filename).suffix
+    return pathlib.Path("upload/movies/") / pathlib.Path(filename)
+
 
 class Movie(models.Model):
     title = models.CharField(max_length=100)
@@ -44,6 +51,11 @@ class Movie(models.Model):
         blank=True,
     )
     duration = models.IntegerField()
+
+    image = models.ImageField(
+        null=True,
+        upload_to=movie_upload_path
+    )
 
     class Meta:
         verbose_name_plural = "movies"

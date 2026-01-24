@@ -30,6 +30,13 @@ class MovieSerializer(serializers.ModelSerializer):
         model = Movie
         fields = ("id", "title", "description", "duration", "genres", "actors")
 
+
+class MovieImageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Movie
+        fields = ("id", "image")
+
+
 class MovieListSerializer(serializers.ModelSerializer):
     genres = serializers.SlugRelatedField(
         many=True,
@@ -37,10 +44,19 @@ class MovieListSerializer(serializers.ModelSerializer):
         slug_field="name"
     )
     actors = serializers.SerializerMethodField()
+    image = serializers.ImageField(read_only=True)
 
     class Meta:
         model = Movie
-        fields = ("id", "title", "description", "duration", "genres", "actors")
+        fields = (
+            "id",
+            "title",
+            "description",
+            "duration",
+            "genres",
+            "actors",
+            "image"
+        )
 
     def get_actors(self, obj):
         return [
@@ -50,8 +66,12 @@ class MovieListSerializer(serializers.ModelSerializer):
 
 
 class MovieRetrieveSerializer(MovieSerializer):
+    image = serializers.ImageField(read_only=True)
     genres = GenreSerializer(many=True, read_only=True)
     actors = ActorSerializer(many=True, read_only=True)
+
+    class Meta(MovieSerializer.Meta):
+        fields = MovieSerializer.Meta.fields + ("image",)
 
 
 class MovieSessionSerializer(serializers.ModelSerializer):
@@ -68,7 +88,10 @@ class MovieSessionSerializer(serializers.ModelSerializer):
         read_only=True
     )
     tickets_available = serializers.SerializerMethodField()
-
+    movie_image = serializers.ImageField(
+        source="movie.image",
+        read_only=True
+    )
     class Meta:
         model = MovieSession
         fields = (
@@ -78,6 +101,7 @@ class MovieSessionSerializer(serializers.ModelSerializer):
             "cinema_hall_name",
             "cinema_hall_capacity",
             "tickets_available",
+            "movie_image"
         )
 
     def get_tickets_available(self, obj):
