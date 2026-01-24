@@ -57,7 +57,6 @@ class PublicMovieSessionApiTests(TestCase):
 class PrivateMovieSessionApiTests(TestCase):
     def setUp(self):
         self.user = create_user(
-            username="test_admin",
             email="test@test.com",
             password="testpass",
         )
@@ -105,7 +104,6 @@ class PrivateMovieSessionApiTests(TestCase):
 class AdminMovieSessionApiTests(TestCase):
     def setUp(self):
         self.user = create_user(
-            username="test_admin",
             email="test@test.com",
             password="testpass",
             is_staff=True,
