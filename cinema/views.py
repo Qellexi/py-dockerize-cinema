@@ -1,3 +1,4 @@
+from drf_spectacular.utils import extend_schema, OpenApiParameter
 from rest_framework import viewsets, status
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.decorators import action
@@ -17,7 +18,6 @@ from cinema.serializers import (
 
 class MovieViewSet(viewsets.ModelViewSet):
     queryset = Movie.objects.all()
-    authentication_classes = (TokenAuthentication,)
     permission_classes = (IsAdminOrIfAuthenticatedReadOnly,)
     http_method_names = ["get", "post"]
 
@@ -56,7 +56,7 @@ class MovieViewSet(viewsets.ModelViewSet):
         if self.action in ("list", "retrieve"):
             return queryset.prefetch_related("genres", "actors")
 
-        return queryset
+        return queryset.order_by("id")
 
     @action(
         methods=["GET", "POST"],
@@ -74,11 +74,33 @@ class MovieViewSet(viewsets.ModelViewSet):
 
         return Response(serializer.data, status=status.HTTP_400_BAD_REQUEST)
 
+    @extend_schema(
+        parameters=[
+            OpenApiParameter(
+                "title",
+                type=str,
+                description="Filter by title",
+            ),
+            OpenApiParameter(
+                "genres",
+                type={"type": "array", "items": {"type": "string"}},
+                description="Filter by genre id (ex. ?genre=1,2,3)",
+            ),
+            OpenApiParameter(
+                "actors",
+                type={"type": "array", "items": {"type": "string"}},
+                description="Filter by actor id (ex. ?actor=1,2,3)",
+            ),
+        ]
+    )
+    def list(self, request, *args, **kwargs):
+        """Get list of movies"""
+        return super().list(request, *args, **kwargs)
+
 
 class GenreViewSet(viewsets.ModelViewSet):
     queryset = Genre.objects.all()
     serializer_class = GenreSerializer
-    authentication_classes = (TokenAuthentication,)
     permission_classes = (IsAdminOrIfAuthenticatedReadOnly,)
     http_method_names = ["get", "post"]
 
@@ -86,7 +108,6 @@ class GenreViewSet(viewsets.ModelViewSet):
 class ActorViewSet(viewsets.ModelViewSet):
     queryset = Actor.objects.all()
     serializer_class = ActorSerializer
-    authentication_classes = (TokenAuthentication,)
     permission_classes = (IsAdminOrIfAuthenticatedReadOnly,)
     http_method_names = ["get", "post"]
 
@@ -94,14 +115,12 @@ class ActorViewSet(viewsets.ModelViewSet):
 class CinemaHallViewSet(viewsets.ModelViewSet):
     queryset = CinemaHall.objects.all()
     serializer_class = CinemaHallSerializer
-    authentication_classes = (TokenAuthentication,)
     permission_classes = (IsAdminOrIfAuthenticatedReadOnly,)
     http_method_names = ["get", "post"]
 
 
 class MovieSessionViewSet(viewsets.ModelViewSet):
     queryset = MovieSession.objects.all()
-    authentication_classes = (TokenAuthentication,)
     permission_classes = (IsAuthenticatedOrAdmin,)
     http_method_names = ["get", "post"]
 
@@ -152,11 +171,28 @@ class MovieSessionViewSet(viewsets.ModelViewSet):
 
         return Response(serializer.data, status=status.HTTP_400_BAD_REQUEST)
 
+    @extend_schema(
+        parameters=[
+            OpenApiParameter(
+                "date",
+                type=str,
+                description="Filter by show date (YYYY-MM-DD)",
+            ),
+            OpenApiParameter(
+                "movie",
+                type={"type": "array", "items": {"type": "number"}},
+                description="Filter by movie id (ex. ?movie=1,2,3)",
+            )
+        ]
+    )
+    def list(self, request, *args, **kwargs):
+        """Get list of movies"""
+        return super().list(request, *args, **kwargs)
+
 
 class OrderViewSet(viewsets.ModelViewSet):
     queryset = Order.objects.all()
     serializer_class = OrderSerializer
-    authentication_classes = (TokenAuthentication,)
     permission_classes = (IsAuthenticated,)
     http_method_names = ["get", "post"]
 

@@ -9,7 +9,7 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 For more information on this file, see
 https://docs.djangoproject.com/en/4.0/topics/settings/
 """
-
+from datetime import timedelta
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     'debug_toolbar',
     "rest_framework",
     "rest_framework.authtoken",
+    "drf_spectacular",
     "cinema",
     "user",
 ]
@@ -147,10 +148,39 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 REST_FRAMEWORK = {
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.LimitOffsetPagination',
     'PAGE_SIZE': 1,
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
     'DEFAULT_PERMISSION_CLASSES': [
         'cinema.permissions.IsAdminOrIfAuthenticatedReadOnly'
     ],
-    'DEFAULT_AUTHENTICATION_CLASSES': [
-        'rest_framework.authentication.TokenAuthentication',
-    ]
+    # 'DEFAULT_AUTHENTICATION_CLASSES': [
+    #     'rest_framework.authentication.TokenAuthentication',
+    # ],
+    "DEFAULT_AUTHENTIFICATION_CLASSES": [
+        "rest_framework_simplejwt.authentication.JWTAuthentication",
+    ],
+    "DEFAULT_THROTTLE_CLASSES": [
+        "rest_framework.throttling.AnonRateThrottle",
+        "rest_framework.throttling.UserRateThrottle",
+    ],
+    "DEFAULT_THROTTLE_RATES": {
+        "anon": "10/day",
+        "user": "30/day"
+    }
+}
+SPECTACULAR_SETTINGS = {
+    "TITLE": "Bus Station API",
+    "DESCRIPTION": "Other tickets for your bus trips",
+    "VERSION": "1.0.0",
+    "SERVE_INCLUDE_SCHEMA": False,
+    "SWAGGER_UI_SETTINGS": {
+        "deepLinking": True,
+        "defaultModelRendering": "model",
+        "defaultModelExpandDepth": 2,
+    }
+}
+
+SIMPLE_JWT = {
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=10),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=3),
+    "ROTATE_REFRESH_TOKENS": False,
 }
