@@ -1,5 +1,6 @@
 import uuid
-from _pytest import pathlib
+
+from pathlib import Path
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models
@@ -33,9 +34,9 @@ class CinemaHall(models.Model):
     def __str__(self):
         return f"CinemaHall: {self.name} (rows: {self.rows}, seats_in_row: {self.seats_in_row})"
 
-def movie_upload_path(instance: "Movie", filename: str) -> pathlib.Path:
-    filename = f"{slugify(instance.title)}-{uuid.uuid4()}" + pathlib.Path(filename).suffix
-    return pathlib.Path("upload/movies/") / pathlib.Path(filename)
+def movie_upload_path(instance: "Movie", filename: str) -> Path:
+    filename = f"{slugify(instance.title)}-{uuid.uuid4()}" + Path(filename).suffix
+    return Path("upload/movies/") / Path(filename)
 
 
 class Movie(models.Model):
