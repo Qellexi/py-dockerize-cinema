@@ -195,6 +195,39 @@ class AuthenticatedBusApiTests(TestCase):
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         self.assertEqual(res.data["count"], movies.count())
 
+    def test_filter_movies_by_title(self):
+        movie_1 = sample_movie(title="Harry Potter")
+        movie_2 = sample_movie(title="Lord of the Rings")
+        movie_3 = sample_movie(title="Random Movie")
+
+        res = self.client.get(
+            MOVIE_URL,
+            {"title": "harry"}  # case-insensitive
+        )
+
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertEqual(res.data["count"], 1)
+        self.assertEqual(res.data["results"][0]["id"], movie_1.id)
+
+    def test_filter_movies_by_actors(self):
+        actor_1 = sample_actor(first_name="Brad", last_name="Pitt")
+        actor_2 = sample_actor(first_name="Tom", last_name="Cruise")
+
+        movie_1 = sample_movie(title="Movie 1")
+        movie_2 = sample_movie(title="Movie 2")
+        movie_3 = sample_movie(title="Movie 3")
+
+        movie_1.actors.add(actor_1)
+        movie_2.actors.add(actor_2)
+
+        res = self.client.get(
+            MOVIE_URL,
+            {"actors": f"{actor_1.id},{actor_2.id}"}
+        )
+
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertEqual(res.data["count"], 2)
+
     def test_filter_movies_by_genres(self):
         movie_without_genres = sample_movie()
         movie_with_genre_1 = sample_movie(title="Title1")

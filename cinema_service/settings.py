@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     'debug_toolbar',
     "rest_framework",
     "rest_framework.authtoken",
+    "rest_framework_simplejwt",
     "drf_spectacular",
     "cinema",
     "user",
@@ -181,6 +182,6 @@ SPECTACULAR_SETTINGS = {
 
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(minutes=10),
-    "REFRESH_TOKEN_LIFETIME": timedelta(days=3),
+    "REFRESH_TOKEN_LIFETIME": timedelta(minutes=3),
     "ROTATE_REFRESH_TOKENS": False,
 }
