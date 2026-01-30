@@ -121,8 +121,9 @@ class CinemaHallViewSet(viewsets.ModelViewSet):
 
 class MovieSessionViewSet(viewsets.ModelViewSet):
     queryset = MovieSession.objects.all()
-    permission_classes = (IsAuthenticatedOrAdmin,)
-    http_method_names = ["get", "post"]
+    permission_classes = (IsAdminOrIfAuthenticatedReadOnly,)
+    http_method_names = ["get", "post", "put", "delete"]
+
 
     @staticmethod
     def _params_to_ints(qs):

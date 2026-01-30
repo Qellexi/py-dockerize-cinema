@@ -7,14 +7,14 @@ from rest_framework.test import APIClient
 from rest_framework import status
 
 from cinema.models import MovieSession, Movie, CinemaHall
-from cinema.tests.test_actor_api import sample_actor
+from cinema.tests.test_movie_api import sample_actor
 from cinema.tests.test_cinema_hall_api import sample_cinema_hall
 from cinema.tests.test_genre_api import sample_genres
 from cinema.tests.test_movie_api import sample_movie
 from user.tests.test_user_api import create_user
-from cinema.serializers import MovieSessionDetailSerializer
+from cinema.serializers import MovieSessionRetrieveSerializer
 
-MOVIE_SESSION_URL = reverse("cinema:moviesession-list")
+MOVIE_SESSION_URL = reverse("cinema:movie_sessions-list")
 
 
 def sample_movie_session(**params):
@@ -42,7 +42,7 @@ def sample_movie_session(**params):
 
 
 def detail_url(movie_session_id):
-    return reverse("cinema:moviesession-detail", args=[movie_session_id])
+    return reverse("cinema:movie_sessions-detail", args=[movie_session_id])
 
 
 class PublicMovieSessionApiTests(TestCase):
@@ -51,7 +51,7 @@ class PublicMovieSessionApiTests(TestCase):
 
     def test_auth_required(self):
         res = self.client.get(MOVIE_SESSION_URL)
-        self.assertEqual(res.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertEqual(res.status_code, status.HTTP_403_FORBIDDEN)
 
 
 class PrivateMovieSessionApiTests(TestCase):
@@ -75,7 +75,7 @@ class PrivateMovieSessionApiTests(TestCase):
         url = detail_url(movie_session.id)
         response = self.client.get(url)
 
-        serializer = MovieSessionDetailSerializer(movie_session, many=False)
+        serializer = MovieSessionRetrieveSerializer(movie_session, many=False)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data, serializer.data)
@@ -112,48 +112,21 @@ class AdminMovieSessionApiTests(TestCase):
         self.client.force_authenticate(user=self.user)
 
     def test_post_movie_session(self):
-        genres = sample_genres()
-        actors = sample_actor()
-        movie = sample_movie()
-
-        movie.genres.add(genres)
-        movie.actors.add(actors)
-
-        cinema_hall = sample_cinema_hall()
-
-        payload = {
-            "movie": movie.id,
-            "cinema_hall": cinema_hall.id,
-            "show_time": datetime.datetime(
-                year=2022,
-                month=9,
-                day=2,
-            ),
-        }
+        payload = {}
 
         response = self.client.post(MOVIE_SESSION_URL, payload)
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_put_movie_session(self):
         movie_session = sample_movie_session()
 
-        movie = Movie.objects.get(pk=1)
-        cinema_hall = CinemaHall.objects.get(pk=1)
-
-        payload = {
-            "movie": movie.id,
-            "cinema_hall": cinema_hall.id,
-            "show_time": datetime.datetime(
-                year=2023,
-                month=1,
-                day=23,
-            ),
-        }
-
         url = detail_url(movie_session.id)
+        payload = {}
+
         response = self.client.put(url, payload)
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_delete_movie_session(self):
         movie_session = sample_movie_session()

@@ -8,7 +8,7 @@ from cinema.models import Genre
 from user.tests.test_user_api import create_user
 from cinema.serializers import GenreSerializer
 
-GENRE_URL = reverse("cinema:genre-list")
+GENRE_URL = reverse("cinema:genres-list")
 
 
 def sample_genres(**params):
