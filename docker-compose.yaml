@@ -1,5 +1,5 @@
 services:
-  station:
+  app:
     build:
       context: .
     env_file:
@@ -7,11 +7,12 @@ services:
     ports:
       - "8000:8000"
     command: >
-      sh -c "
-            ./wait_for_db.sh &&
-            python manage.py migrate &&
-            python manage.py runserver 0.0.0.0:8000
-            "
+        sh -c "
+        python manage.py wait_for_db &&
+        python manage.py migrate &&
+        python manage.py runserver 0.0.0.0:8000
+        "
+
     volumes:
       - ./:/app
       - my_media:/files/media
